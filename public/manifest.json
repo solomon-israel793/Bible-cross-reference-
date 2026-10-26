@@ -1,0 +1,88 @@
+{
+  "id": "/",
+  "name": "ScriptureArc - Bible Cross-Reference",
+  "short_name": "ScriptureArc",
+  "description": "YouVersion-inspired Bible reader featuring 63,779 scripture cross-reference arcs, KJV and NIV translations, and deep verse study mode.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "theme_color": "#121212",
+  "background_color": "#121212",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["books", "education", "lifestyle", "reference"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "ScriptureArc reading view with 63,779 cross-reference arcs"
+    },
+    {
+      "src": "/screenshots/screenshot-mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "YouVersion-inspired mobile reading view with audio controls"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Read Bible",
+      "short_name": "Read",
+      "description": "Open Bible reading view in KJV or NIV",
+      "url": "/?tab=bible",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "63,779 Arcs Map",
+      "short_name": "Arcs Map",
+      "description": "Explore the Christoph Römhild & Chris Harrison scripture cross-reference map",
+      "url": "/?tab=discover",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Journal",
+      "short_name": "Journal",
+      "description": "View your saved highlights, notes, and study bookmarks",
+      "url": "/?tab=you",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false
+}

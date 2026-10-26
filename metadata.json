@@ -1,0 +1,6 @@
+{
+  "name": "ScriptureArc - Bible Cross-Reference & Study",
+  "description": "YouVersion-inspired Bible reader featuring the iconic 63,779 cross-reference arc visualization, KJV and NIV translations, deep verse study mode, and verse notes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
