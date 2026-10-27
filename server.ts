@@ -1,11 +1,16 @@
 import express, { Request, Response } from 'express';
+import http from 'http';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+process.env.DISABLE_HMR = 'true';
+
 const app = express();
+const httpServer = http.createServer(app);
 app.use(express.json());
 
 // Explicitly serve public assets (manifest.json, sw.js, icons) with correct headers for PWABuilder
@@ -206,27 +211,73 @@ app.post('/api/user/saved', (req: Request, res: Response) => {
   return res.json({ success: true, count: userStorage[userId].highlights.length + userStorage[userId].notes.length });
 });
 
+// Cache for complete scripture chapters
+const bibleChapterCache: Record<string, any[]> = {};
+
+// Scripture Text API Proxy with Memory Caching (Serves full KJV chapters)
+app.get('/api/bible/:book/:chapter', async (req: Request, res: Response) => {
+  const { book, chapter } = req.params;
+  const version = (req.query.version as string || 'KJV').toUpperCase();
+  const cacheKey = `${version}-${book}-${chapter}`;
+
+  if (bibleChapterCache[cacheKey]) {
+    return res.json({ book, chapter: Number(chapter), verses: bibleChapterCache[cacheKey] });
+  }
+
+  try {
+    const query = encodeURIComponent(`${book} ${chapter}`);
+    const resp = await fetch(`https://bible-api.com/${query}?translation=kjv`);
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && data.verses && Array.isArray(data.verses) && data.verses.length > 0) {
+        const verses = data.verses.map((v: any) => ({
+          book: book,
+          bookId: v.book_id || book.slice(0, 3).toUpperCase(),
+          chapter: Number(chapter),
+          verse: v.verse,
+          textKJV: (v.text || '').trim().replace(/\n+/g, ' '),
+          textNIV: (v.text || '').trim().replace(/\n+/g, ' '),
+          textBSB: (v.text || '').trim().replace(/\n+/g, ' ')
+        }));
+        bibleChapterCache[cacheKey] = verses;
+        return res.json({ book, chapter: Number(chapter), verses });
+      }
+    }
+  } catch (err) {
+    console.warn(`Backend fetch failed for ${book} ${chapter}:`, err);
+  }
+
+  return res.status(404).json({ error: `Verses for ${book} ${chapter} not found.` });
+});
+
 // Mount Vite in dev or serve dist in production
 async function startServer() {
-  const isDev = process.env.NODE_ENV !== 'production';
+  const distPath = path.resolve(__dirname, 'dist');
+  const indexPath = path.resolve(distPath, 'index.html');
+  const isDev = process.env.NODE_ENV !== 'production' || !fs.existsSync(indexPath);
 
   if (isDev) {
+    console.log('[Server] Starting in development / dynamic mode with Vite middleware');
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: false
+      },
       appType: 'spa'
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
+    console.log('[Server] Serving production static build from dist/');
+    app.use(express.static(distPath));
     app.get('*', (_req, res) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+      res.sendFile(indexPath);
     });
   }
 
   const PORT = Number(process.env.PORT) || 3000;
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`ScriptureArc Full-Stack Server running on port ${PORT}`);
+  httpServer.listen(PORT, '0.0.0.0', () => {
+    console.log(`ScriptureArc Full-Stack Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

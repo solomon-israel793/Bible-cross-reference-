@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>ScriptureArc - Bible Cross-Reference</title>
-    <meta name="description" content="YouVersion-inspired Bible reader featuring 63,779 scripture cross-reference arcs, KJV and NIV translations, and deep verse study mode." />
+    <title>ScriptureArc - Bible Cross-Reference & Study</title>
+    <meta name="description" content="Comprehensive Bible reader featuring the iconic 63,779 cross-reference arc visualization, authentic scripture text, deep verse study accordions, and personal notes." />
     
     <!-- PWA & Mobile Web App Meta Tags -->
     <meta name="theme-color" content="#121212" />
@@ -16,8 +16,8 @@
     <meta name="msapplication-TileColor" content="#121212" />
 
     <!-- OpenGraph & Twitter Social Cards -->
-    <meta property="og:title" content="ScriptureArc - Bible Cross-Reference" />
-    <meta property="og:description" content="YouVersion-inspired Bible reader featuring 63,779 scripture cross-reference arcs, KJV and NIV translations, and deep verse study mode." />
+    <meta property="og:title" content="ScriptureArc - Bible Cross-Reference & Study" />
+    <meta property="og:description" content="Comprehensive Bible reader featuring the iconic 63,779 cross-reference arc visualization, authentic scripture text, deep verse study accordions, and personal notes." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/screenshots/screenshot-desktop.png" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -34,8 +34,44 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 
-    <!-- Explicit Service Worker Registration for PWABuilder Crawler -->
+    <!-- Dev Sandbox & Service Worker Management -->
     <script>
+      (function() {
+        // Suppress harmless Vite HMR WebSocket disconnect noise in sandbox iFrames
+        var origConsoleError = console.error;
+        console.error = function() {
+          for (var i = 0; i < arguments.length; i++) {
+            var arg = arguments[i];
+            var str = (arg && (arg.stack || arg.message)) ? (arg.stack || arg.message) : String(arg);
+            if (str && (str.indexOf('WebSocket') !== -1 || str.indexOf('@vite/client') !== -1 || str.indexOf('vite-hmr') !== -1)) {
+              return;
+            }
+          }
+          return origConsoleError.apply(console, arguments);
+        };
+
+        window.addEventListener('error', function(event) {
+          if (event && (
+            (event.message && event.message.indexOf('WebSocket') !== -1) ||
+            (event.filename && event.filename.indexOf('@vite/client') !== -1) ||
+            (event.error && (event.error.message || '').indexOf('WebSocket') !== -1)
+          )) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = event && event.reason;
+          var msg = (reason && (reason.stack || reason.message)) ? (reason.stack || reason.message) : String(reason);
+          if (msg && (msg.indexOf('WebSocket') !== -1 || msg.indexOf('@vite/client') !== -1)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+      })();
+
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
           navigator.serviceWorker.register('/sw.js')

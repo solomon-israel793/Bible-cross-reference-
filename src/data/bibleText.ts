@@ -492,28 +492,65 @@ const RUNTIME_CACHE = new Map<string, BibleVerse[]>();
  */
 export async function fetchChapterVerses(bookName: string, chapter: number, translation: BibleVersion = 'KJV'): Promise<BibleVerse[]> {
   const key = `${bookName}-${chapter}`;
-  
-  // 1. Check bundled text
-  if (BUNDLED_SCRIPTURE[key]) {
-    return BUNDLED_SCRIPTURE[key];
-  }
+  const localCacheKey = `scripture_cache_${translation}_${bookName}_${chapter}`;
 
-  // 2. Check runtime cache
+  // 1. Check runtime memory cache
   if (RUNTIME_CACHE.has(key)) {
     return RUNTIME_CACHE.get(key)!;
+  }
+
+  // 2. Check local storage persistent offline cache
+  try {
+    const cachedLocal = localStorage.getItem(localCacheKey);
+    if (cachedLocal) {
+      const parsed = JSON.parse(cachedLocal) as BibleVerse[];
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        RUNTIME_CACHE.set(key, parsed);
+        return parsed;
+      }
+    }
+  } catch {}
+
+  // 3. Check bundled offline scripture
+  if (BUNDLED_SCRIPTURE[key] && BUNDLED_SCRIPTURE[key].length > 0) {
+    RUNTIME_CACHE.set(key, BUNDLED_SCRIPTURE[key]);
+    return BUNDLED_SCRIPTURE[key];
   }
 
   const bookMeta = getBookByName(bookName);
   const bookId = bookMeta ? bookMeta.id : 'GEN';
 
-  // 3. Attempt public Bible API fetch
+  // 4. Multi-tier Real Scripture Fetching
+  // Tier A: Backend API Proxy with server caching
   try {
-    const apiTrans = translation === 'KJV' ? 'kjv' : translation.toLowerCase();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(`/api/bible/${encodeURIComponent(bookName)}/${chapter}?version=${translation}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json && Array.isArray(json.verses) && json.verses.length > 0) {
+        RUNTIME_CACHE.set(key, json.verses);
+        try {
+          localStorage.setItem(localCacheKey, JSON.stringify(json.verses));
+        } catch {}
+        return json.verses;
+      }
+    }
+  } catch (e) {
+    // Continue to next tier
+  }
+
+  // Tier B: Direct public Bible-API endpoint (verbatim KJV)
+  try {
     const query = encodeURIComponent(`${bookName} ${chapter}`);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+    const timeout = setTimeout(() => controller.abort(), 5000);
 
-    const response = await fetch(`https://bible-api.com/${query}?translation=${apiTrans}`, {
+    const response = await fetch(`https://bible-api.com/${query}?translation=kjv`, {
       signal: controller.signal
     });
     clearTimeout(timeout);
@@ -526,36 +563,62 @@ export async function fetchChapterVerses(bookName: string, chapter: number, tran
           bookId: bookId,
           chapter: chapter,
           verse: v.verse,
-          textKJV: v.text ? v.text.trim().replace(/\n/g, ' ') : `Verse ${v.verse}`,
-          textNIV: v.text ? v.text.trim().replace(/\n/g, ' ') : `Verse ${v.verse}`,
-          textBSB: v.text ? v.text.trim().replace(/\n/g, ' ') : `Verse ${v.verse}`
+          textKJV: (v.text || '').trim().replace(/\n+/g, ' '),
+          textNIV: (v.text || '').trim().replace(/\n+/g, ' '),
+          textBSB: (v.text || '').trim().replace(/\n+/g, ' ')
         }));
         RUNTIME_CACHE.set(key, parsedVerses);
+        try {
+          localStorage.setItem(localCacheKey, JSON.stringify(parsedVerses));
+        } catch {}
         return parsedVerses;
       }
     }
   } catch (err) {
-    // Graceful offline fallback
-    console.warn(`Could not fetch online text for ${bookName} ${chapter}, generating structured canonical fallback.`);
+    // Continue to next tier
   }
 
-  // 4. Fallback Generator based on canonical verse counts
-  const verseCount = bookMeta?.approxChapterVerses[chapter - 1] || 25;
-  const generated: BibleVerse[] = [];
-  for (let v = 1; v <= Math.min(verseCount, 30); v++) {
-    generated.push({
-      book: bookName,
-      bookId: bookId,
-      chapter: chapter,
-      verse: v,
-      textKJV: `${bookName} chapter ${chapter}, verse ${v}. The scripture declares the holy revelation of God unto His people.`,
-      textNIV: `${bookName} chapter ${chapter}, verse ${v}. The scripture declares the holy revelation of God to his people.`,
-      textBSB: `${bookName} chapter ${chapter}, verse ${v}. The scripture declares the holy revelation of God to His people.`
+  // Tier C: Bolls Life Scripture API
+  try {
+    const bookOrder = bookMeta?.order || 1;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const bollsResp = await fetch(`https://bolls.life/get-chapter/KJV/${bookOrder}/${chapter}/`, {
+      signal: controller.signal
     });
+    clearTimeout(timeout);
+
+    if (bollsResp.ok) {
+      const bollsData = await bollsResp.json();
+      if (Array.isArray(bollsData) && bollsData.length > 0) {
+        const parsedVerses: BibleVerse[] = bollsData.map((v: any) => {
+          // Clean HTML/Strong's tags
+          const cleanText = (v.text || '')
+            .replace(/<[^>]*>?/gm, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+          return {
+            book: bookName,
+            bookId: bookId,
+            chapter: chapter,
+            verse: v.verse,
+            textKJV: cleanText,
+            textNIV: cleanText,
+            textBSB: cleanText
+          };
+        });
+        RUNTIME_CACHE.set(key, parsedVerses);
+        try {
+          localStorage.setItem(localCacheKey, JSON.stringify(parsedVerses));
+        } catch {}
+        return parsedVerses;
+      }
+    }
+  } catch (err) {
+    console.error('All online scripture sources failed for', bookName, chapter);
   }
 
-  RUNTIME_CACHE.set(key, generated);
-  return generated;
+  return [];
 }
 
 export function getVerseDisplay(verse: BibleVerse, version: BibleVersion): string {

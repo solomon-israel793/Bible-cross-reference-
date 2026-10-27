@@ -47,7 +47,16 @@ export interface CrossReference {
   targetChapter: number;
   targetVerseStart: number;
   targetVerseEnd?: number;
-  relationship: 'Prophecy & Fulfillment' | 'Creation & Eternity' | 'Messianic' | 'Covenant & Law' | 'Apostolic Quotation' | 'Thematic Parallel' | 'Wisdom & Praise';
+  relationship: 
+    | 'Prophecy & Fulfillment' 
+    | 'Creation & Eternity' 
+    | 'Messianic' 
+    | 'Covenant & Law' 
+    | 'Apostolic Quotation' 
+    | 'Thematic Parallel' 
+    | 'Wisdom & Praise'
+    | 'Typology & Shadow'
+    | 'Wisdom & Law';
   targetKJV: string;
   targetNIV?: string;
   notes?: string;

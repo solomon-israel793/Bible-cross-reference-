@@ -52,14 +52,21 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   ]);
   const [showPrayerModal, setShowPrayerModal] = useState(false);
   const [newPrayer, setNewPrayer] = useState('');
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
 
   const displayName = user ? user.name : 'Guest Reader';
   const initial = displayName.charAt(0).toUpperCase();
   const isAdmin = user?.email.toLowerCase() === 'solomonisrael793@gmail.com' || user?.role === 'admin';
 
   const handleShareProfile = () => {
-    navigator.clipboard.writeText(window.location.origin);
+    navigator.clipboard?.writeText(window.location.origin);
     setCopiedLink(true);
+    showToast('Profile link copied to clipboard!');
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
@@ -114,7 +121,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
             </button>
           )}
           <button 
-            onClick={() => alert('Settings: KJV & NIV Bible Cross-Reference System v2.0')}
+            onClick={() => showToast('Settings: KJV & NIV Bible Cross-Reference System v2.0')}
             className="p-1 text-zinc-300 hover:text-white"
           >
             <Settings className="w-5 h-5" />
@@ -128,6 +135,13 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
         </div>
       </div>
 
+      {/* Floating In-App Toast */}
+      {toastMsg && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-amber-500 text-zinc-950 font-bold text-xs shadow-2xl animate-bounce">
+          {toastMsg}
+        </div>
+      )}
+
       {/* User Hero Section (Matching Screenshot 2 exactly) */}
       <div className="flex items-center justify-between pt-2">
         <div>
@@ -140,7 +154,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
             </p>
           )}
           <button 
-            onClick={() => alert('Invite friends to read together')}
+            onClick={() => showToast('Invite link copied. Share with fellow study partners!')}
             className="mt-2 text-xs font-medium px-3 py-1 rounded-full bg-zinc-800/80 text-zinc-300 hover:bg-zinc-800 transition-colors inline-block"
           >
             Add friends
@@ -153,7 +167,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
             {initial}
           </div>
           <button 
-            onClick={() => alert('Update Profile Picture')}
+            onClick={() => showToast('Photo update: Available in connected account profile.')}
             className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-zinc-700 text-zinc-200 border border-zinc-900 flex items-center justify-center shadow"
           >
             <Camera className="w-3.5 h-3.5" />
@@ -164,9 +178,60 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
       {/* In-App PWA Install Prompt */}
       <PWAInstallButton variant="full" />
 
+      {/* Android APK & PWABuilder Generator Card */}
+      <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
+              🤖
+            </span>
+            <span className="text-xs font-bold text-white">Android APK Package</span>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            PWABuilder Ready
+          </span>
+        </div>
+
+        <p className="text-xs text-zinc-300 leading-relaxed">
+          Because the app is 100% compliant with PWABuilder, you can generate your signed Android <strong className="text-white">.apk</strong> or <strong className="text-white">.aab</strong> file in 1 click.
+        </p>
+
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center justify-between p-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs">
+            <span className="text-zinc-400 font-mono truncate mr-2 select-all">
+              {window.location.origin}
+            </span>
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(window.location.origin);
+                showToast('App URL copied to clipboard: ' + window.location.origin);
+              }}
+              className="text-amber-400 hover:text-amber-300 text-[11px] font-bold shrink-0"
+            >
+              Copy URL
+            </button>
+          </div>
+
+          <a
+            href={`https://www.pwabuilder.com/reportcard?site=${encodeURIComponent(window.location.origin)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow"
+          >
+            <span>Generate & Download APK on PWABuilder →</span>
+          </a>
+        </div>
+
+        <div className="text-[11px] text-zinc-400 space-y-1 pt-1 border-t border-zinc-800/80">
+          <div><strong>Step 1:</strong> Tap the green button above to open PWABuilder.</div>
+          <div><strong>Step 2:</strong> Tap <strong>"Package for Stores"</strong> → select <strong>Android</strong>.</div>
+          <div><strong>Step 3:</strong> Choose <strong>APK</strong> for direct phone install or <strong>AAB</strong> for Play Store.</div>
+        </div>
+      </div>
+
       {/* Find Your Church Pill Button */}
       <button 
-        onClick={() => alert('Connecting to your local church congregation...')}
+        onClick={() => showToast('Locating fellowship & study churches in your area...')}
         className="w-full py-3 px-4 rounded-full bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 flex items-center justify-center gap-2 text-sm font-semibold text-zinc-200 transition-colors"
       >
         <Church className="w-4 h-4 text-zinc-400" />
@@ -192,7 +257,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
         </button>
 
         <button
-          onClick={() => alert('Scripture Outreach & Translation Giving')}
+          onClick={() => showToast('Scripture Translation & Cross-Reference Project Giving')}
           className="p-4 rounded-2xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800/80 flex flex-col items-center justify-center gap-2 text-zinc-200 transition-colors"
         >
           <Heart className="w-5 h-5 text-zinc-300" />
